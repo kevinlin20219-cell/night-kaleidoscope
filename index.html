@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>夜光万花镜画室</title>
+<style>
+:root{
+  /* 布局：顶部三间画室的门牌；每间画室是 颜料和画笔 | 画布 | 任务和收藏 三栏。深夜蓝舞台，只做深色。 */
+  --bg:#12112E; --card:#1D1B45; --ink:#F1EDFF; --soft:#A9A3D6; --line:rgba(255,255,255,.16);
+  --rose:#FF6FA5; --sun:#FFD166; --mint:#5BE0C2; --sky:#8FA8FF;
+  --display:"Yuanti SC","YouYuan","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  --body:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:radial-gradient(620px 420px at 0% 0%,rgba(255,111,165,.16),transparent 70%),radial-gradient(640px 460px at 100% 8%,rgba(91,224,194,.13),transparent 70%),radial-gradient(760px 520px at 55% 105%,rgba(143,168,255,.20),transparent 70%),var(--bg);
+  background-attachment:fixed;color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6;min-height:100vh;
+}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.wrap{max-width:1400px;margin:0 auto;padding:18px 22px 48px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px 28px;flex-wrap:wrap}
+h1{font-family:var(--display);font-size:42px;line-height:1.1;margin:0;font-weight:700;letter-spacing:.08em}
+h1 span{color:var(--sun);text-shadow:0 0 22px rgba(255,209,102,.6)}
+.sub{margin:6px 0 0;color:var(--soft);font-size:15px}
+h2{font-family:var(--display);font-size:24px;margin:0;font-weight:700;letter-spacing:.04em}
+h3{font-size:14px;margin:0 0 8px;color:var(--soft);font-weight:600;letter-spacing:.08em}
+nav{display:flex;gap:8px;flex-wrap:wrap}
+nav a{font-family:var(--display);font-size:18px;text-decoration:none;color:var(--ink);padding:8px 18px;border-radius:999px;border:1.5px solid rgba(255,255,255,.28);background:rgba(255,255,255,.06)}
+nav a:hover{background:rgba(255,255,255,.16)}
+nav a[aria-current="page"]{background:var(--sun);border-color:var(--sun);color:var(--bg);box-shadow:0 0 22px rgba(255,209,102,.4)}
+
+.view{display:none}.view.on{display:block}
+.studio{display:grid;grid-template-columns:260px minmax(0,1fr) 300px;gap:20px;align-items:start}
+.col{display:flex;flex-direction:column;gap:16px}
+.card{background:rgba(255,255,255,.05);border:1.5px solid var(--line);border-radius:20px;padding:16px 16px 18px}
+.btn{border:1.5px solid rgba(255,255,255,.28);background:rgba(255,255,255,.07);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600;transition:transform .12s,background .12s}
+.btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.16)}
+.btn:active{transform:none}
+.btn[aria-pressed="true"]{background:var(--sun);color:var(--bg);border-color:var(--sun)}
+.btn.big{font-family:var(--display);font-size:20px;padding:10px 20px;background:var(--rose);color:var(--bg);border-color:var(--rose);box-shadow:0 0 22px rgba(255,111,165,.45)}
+.btn.big:hover{background:#FF8CB8}
+.btn.dice{font-family:var(--display);font-size:20px;background:var(--mint);color:var(--bg);border-color:var(--mint);width:100%;box-shadow:0 0 22px rgba(91,224,194,.35);margin-top:12px}
+.btn.dice:hover{background:#7FEBD3}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.row.tight{gap:6px}
+.row+.row{margin-top:8px}
+.num{min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.pals{display:flex;flex-direction:column;gap:4px}
+.pal{display:flex;align-items:center;gap:10px;border:1.5px solid transparent;border-radius:14px;background:none;padding:5px 8px;cursor:pointer;text-align:left}
+.pal:hover{background:rgba(255,255,255,.08)}
+.pal[aria-pressed="true"]{border-color:var(--sun);background:rgba(255,255,255,.12)}
+.pal i{display:flex}
+.pal i b{width:16px;height:16px;border-radius:50%;margin-right:-3px}
+.pal span{font-size:15px;font-weight:600}
+.why{margin:10px 0 0;font-size:14px;color:var(--soft)}
+.pwhy{min-height:3.2em}
+.swatches{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.sw{width:42px;height:42px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;transition:transform .12s}
+.sw:hover{transform:scale(1.1)}
+.sw[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 4px var(--bg),0 0 0 6px var(--sun)}
+input[type=range]{width:100%;accent-color:var(--rose)}
+label.lab{display:flex;justify-content:space-between;font-size:14px;color:var(--soft);font-weight:600;margin-top:10px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(44px,1fr));gap:6px}
+.sbtn{aspect-ratio:1;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);cursor:pointer;padding:3px;transition:transform .12s}
+.sbtn:hover{transform:scale(1.1);background:rgba(255,255,255,.14)}
+.sbtn[aria-pressed="true"]{border-color:var(--sun);background:rgba(255,209,102,.28);box-shadow:0 0 14px rgba(255,209,102,.4)}
+.sbtn canvas{width:100%;height:100%;display:block;pointer-events:none}
+.k{font-size:13px;color:var(--soft);font-weight:600;margin:10px 0 6px}
+.k:first-of-type{margin-top:0}
+
+.stage{display:flex;flex-direction:column;align-items:center;gap:12px}
+.sheet{position:relative;width:min(100%,calc(100vh - 190px));min-width:300px;aspect-ratio:1;border-radius:22px;background:#15143A;border:1.5px solid rgba(255,255,255,.3);box-shadow:0 0 70px rgba(143,168,255,.28);isolation:isolate;overflow:hidden}
+.sheet canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.draw{touch-action:none;cursor:crosshair}
+#k-guide{pointer-events:none}
+.hint{position:absolute;left:0;right:0;top:12%;text-align:center;font-family:var(--display);font-size:24px;color:#D9D5F5;pointer-events:none;transition:opacity .3s;padding:0 12px}
+.hint.dark{color:#85798F}
+.hint.off{opacity:0}
+.bar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.duo{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap;width:100%}
+.duo figure{margin:0;display:flex;flex-direction:column;gap:8px;align-items:center}
+.duo figcaption{font-size:14px;color:var(--soft);font-weight:600}
+.tile{position:relative;width:300px;aspect-ratio:1;border-radius:16px;border:1.5px dashed rgba(255,255,255,.45);overflow:hidden;background:#15143A}
+.tile canvas{position:absolute;inset:0;width:100%;height:100%}
+.tile .hint{font-size:18px;top:40%}
+.prod{width:min(100%,460px);aspect-ratio:1;border-radius:22px;background:rgba(255,255,255,.04);border:1.5px solid var(--line)}
+.prodwrap{flex:1;min-width:280px;max-width:460px}
+
+.taskhead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.drop{width:42px;height:48px;flex:none}
+.task{font-family:var(--display);font-size:22px;line-height:1.5;margin:4px 0 14px;min-height:4.5em;text-wrap:balance}
+.start{font-size:14px;color:var(--sun);font-weight:600;margin:0}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.field label{font-size:14px;font-weight:600;color:var(--soft)}
+.field input{border:1.5px solid rgba(255,255,255,.28);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.08);width:100%}
+.field input::placeholder{color:#8F89BD}
+.err{color:#FF9E9E;font-size:14px;margin:0 0 8px;min-height:1.2em}
+
+.shelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px}
+.work{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:10px 10px 12px;cursor:pointer;text-align:left;transition:transform .15s,border-color .15s}
+.work:hover{transform:translateY(-3px);border-color:var(--sun)}
+.work img{width:100%;aspect-ratio:1;display:block;border-radius:10px}
+.work em{display:inline-block;font-style:normal;font-size:12px;color:var(--mint);font-weight:600;margin-top:8px}
+.work strong{display:block;font-family:var(--display);font-size:19px;overflow-wrap:anywhere}
+.work small{display:block;color:var(--soft);font-size:13px;overflow-wrap:anywhere}
+.empty{color:var(--soft);margin:0;padding:18px;border:1.5px dashed var(--line);border-radius:14px;background:rgba(255,255,255,.04)}
+.stamps{display:flex;flex-wrap:wrap;gap:10px}
+.stamp{border:1.5px dashed rgba(255,255,255,.25);color:var(--soft);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:600}
+.stamp.on{border:1.5px solid var(--sun);color:var(--bg);background:var(--sun)}
+.stamp i{font-style:normal;font-variant-numeric:tabular-nums;opacity:.75;margin-left:6px}
+.sec{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+details{background:rgba(255,255,255,.05);border:1.5px solid var(--line);border-radius:14px;padding:12px 16px;max-width:68ch}
+summary{cursor:pointer;font-weight:600}
+details li{margin:4px 0}
+
+.veil{position:fixed;inset:0;background:rgba(5,5,20,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.veil.on{display:flex}
+.modal{background:var(--card);border:1.5px solid var(--line);border-radius:18px;padding:18px;max-width:560px;width:100%;max-height:100%;overflow:auto}
+.modal img{width:100%;border-radius:10px;display:block}
+.modal h2{margin-top:12px}
+.modal p{margin:4px 0 14px;color:var(--soft)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--sun);color:var(--bg);padding:10px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:20;font-weight:600;max-width:90vw}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:1080px){.studio{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stage{grid-column:1/-1;grid-row:1}.sheet{width:min(100%,640px)}}
+@media (max-width:640px){.studio{grid-template-columns:minmax(0,1fr)}h1{font-size:32px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span>夜光</span>万花镜</h1>
+      <p class="sub">三间画室，没有范例，也没有标准答案。</p>
+    </div>
+    <nav aria-label="画室">
+      <a href="#kaleido" data-v="kaleido">万花镜</a>
+      <a href="#pattern" data-v="pattern">印花设计师</a>
+      <a href="#spark" data-v="spark">灵感挑战</a>
+      <a href="#gallery" data-v="gallery">我的画廊</a>
+    </nav>
+  </header>
+
+  <!-- 一、万花镜 -->
+  <main class="view" id="v-kaleido">
+    <div class="studio">
+      <div class="col">
+        <section class="card" data-m="palette"></section>
+        <section class="card" data-m="stamps"></section>
+        <section class="card" data-m="brush"></section>
+        <section class="card">
+          <h3>画纸</h3>
+          <div class="row tight" id="k-papers">
+            <button class="btn" type="button" data-paper="night">夜空</button>
+            <button class="btn" type="button" data-paper="sea">深海</button>
+            <button class="btn" type="button" data-paper="white">白纸</button>
+          </div>
+        </section>
+      </div>
+      <div class="stage">
+        <div class="sheet">
+          <canvas id="k-base" width="1000" height="1000"></canvas>
+          <canvas id="k-guide" width="1000" height="1000"></canvas>
+          <canvas id="k-live" class="draw" width="1000" height="1000" aria-label="画纸，用鼠标在上面画"></canvas>
+          <div class="hint" id="k-hint">在夜空里任何地方，画下第一笔</div>
+        </div>
+        <div class="bar">
+          <button class="btn" type="button" data-a="undo">撤销一笔</button>
+          <button class="btn" type="button" data-a="redo">重画一笔</button>
+          <button class="btn" type="button" data-a="clear">换一张新纸</button>
+          <button class="btn" type="button" id="k-guides" aria-pressed="true">铅笔辅助线</button>
+          <button class="btn" type="button" data-a="dl" hidden>保存成图片</button>
+        </div>
+      </div>
+      <div class="col">
+        <section class="card" data-m="task"></section>
+        <section class="card">
+          <h3>花瓣数</h3>
+          <div class="row tight" id="k-ns"></div>
+          <div class="row tight"><button class="btn" type="button" id="k-mirror" aria-pressed="true">镜像</button></div>
+          <p class="why">画完再改花瓣数，整幅画会跟着变。</p>
+          <button class="btn dice" type="button" id="k-dice">变一变</button>
+        </section>
+        <section class="card" data-m="save"></section>
+      </div>
+    </div>
+  </main>
+
+  <!-- 二、印花设计师 -->
+  <main class="view" id="v-pattern">
+    <div class="studio">
+      <div class="col">
+        <section class="card" data-m="palette"></section>
+        <section class="card" data-m="stamps"></section>
+        <section class="card" data-m="brush"></section>
+      </div>
+      <div class="stage">
+        <div class="duo">
+          <figure>
+            <div class="tile" id="p-tilebox">
+              <canvas id="p-tile" class="draw" width="360" height="360" aria-label="图案小格，在这里画"></canvas>
+              <div class="hint" id="p-hint">在这一小格里画</div>
+            </div>
+            <figcaption>你的图案（画出格子的部分会从另一边回来）</figcaption>
+          </figure>
+          <figure class="prodwrap">
+            <canvas id="p-prod" class="prod" width="600" height="600" aria-label="印上图案的东西"></canvas>
+            <figcaption id="p-cap">印在连衣裙上</figcaption>
+          </figure>
+        </div>
+        <div class="bar">
+          <button class="btn" type="button" data-a="undo">撤销一步</button>
+          <button class="btn" type="button" data-a="redo">重做一步</button>
+          <button class="btn" type="button" data-a="clear">擦干净重来</button>
+          <button class="btn" type="button" data-a="dl" hidden>保存成图片</button>
+        </div>
+      </div>
+      <div class="col">
+        <section class="card" data-m="task"></section>
+        <section class="card">
+          <h3>印在哪里，怎么排</h3>
+          <p class="k">印在什么上</p>
+          <div class="row tight" id="p-products"></div>
+          <p class="k">排列方式</p>
+          <div class="row tight" id="p-layouts">
+            <button class="btn" type="button" data-layout="grid">整齐排</button>
+            <button class="btn" type="button" data-layout="brick">错开排</button>
+            <button class="btn" type="button" data-layout="mirror">镜子排</button>
+          </div>
+          <p class="k">图案大小</p>
+          <div class="row tight" id="p-scales">
+            <button class="btn" type="button" data-scale="s">小</button>
+            <button class="btn" type="button" data-scale="m">中</button>
+            <button class="btn" type="button" data-scale="l">大</button>
+          </div>
+          <p class="k">底色</p>
+          <div class="row tight" id="p-bases">
+            <button class="btn" type="button" data-base="night">夜空蓝</button>
+            <button class="btn" type="button" data-base="ink">墨黑</button>
+            <button class="btn" type="button" data-base="cream">奶白</button>
+          </div>
+          <button class="btn dice" type="button" id="p-dice">变一变</button>
+        </section>
+        <section class="card" data-m="save"></section>
+      </div>
+    </div>
+  </main>
+
+  <!-- 三、灵感挑战 -->
+  <main class="view" id="v-spark">
+    <div class="studio">
+      <div class="col">
+        <section class="card" data-m="palette"></section>
+        <section class="card" data-m="stamps"></section>
+        <section class="card" data-m="brush"></section>
+      </div>
+      <div class="stage">
+        <div class="sheet">
+          <canvas id="s-canvas" class="draw" width="800" height="800" aria-label="画纸，上面有一个起点"></canvas>
+        </div>
+        <div class="bar">
+          <button class="btn" type="button" data-a="undo">撤销一笔</button>
+          <button class="btn" type="button" data-a="redo">重画一笔</button>
+          <button class="btn" type="button" data-a="clear">擦掉我画的</button>
+          <button class="btn" type="button" data-a="dl" hidden>保存成图片</button>
+        </div>
+      </div>
+      <div class="col">
+        <section class="card">
+          <div class="taskhead">
+            <svg class="drop" viewBox="0 0 46 52" aria-hidden="true"><path d="M23 3C30 15 41 23 41 34a18 18 0 0 1-36 0C5 23 16 15 23 3Z" fill="#FFD166"/><circle cx="17" cy="33" r="2.6" fill="#12112E"/><circle cx="29" cy="33" r="2.6" fill="#12112E"/><path d="M19 40q4 4 8 0" fill="none" stroke="#12112E" stroke-width="2.2" stroke-linecap="round"/></svg>
+            <div><h3 style="margin:0">小火苗的挑战</h3><p class="start" id="s-start"></p></div>
+          </div>
+          <p class="task" id="s-prompt"></p>
+          <div class="row tight">
+            <button class="btn" type="button" id="s-newPrompt">换题目</button>
+            <button class="btn" type="button" id="s-newStart">换起点</button>
+            <button class="btn" type="button" id="s-rot">把纸转一转</button>
+          </div>
+          <p class="why" id="s-count"></p>
+        </section>
+        <section class="card" data-m="save"></section>
+      </div>
+    </div>
+  </main>
+
+  <!-- 画廊 -->
+  <main class="view" id="v-gallery">
+    <section class="sec">
+      <h2>我的画廊</h2>
+      <div class="shelf" id="shelf"></div>
+    </section>
+    <section class="sec">
+      <h2>探险印章</h2>
+      <p class="sub" style="margin:0">印章不看画得像不像，只看你试过多少种不一样的做法。</p>
+      <div class="stamps" id="stamps"></div>
+    </section>
+    <details>
+      <summary>给家长的陪玩建议</summary>
+      <ul>
+        <li>每次 15 分钟左右就够，停在她还想画的时候。</li>
+        <li>少说"真好看""真像"，多问"这里为什么选这个颜色""它叫什么名字""还能变成别的吗"。</li>
+        <li>任务卡只有限制，没有答案。她的理解和您不一样，就是对的。</li>
+        <li>灵感挑战里，同一个起点多画几种，比一种画得精细更有用。</li>
+        <li>作品只存在这台电脑的浏览器里，想长期保留请截图或保存成图片。</li>
+      </ul>
+    </details>
+  </main>
+</div>
+
+<div class="veil" id="veil" role="dialog" aria-modal="true" aria-labelledby="mName">
+  <div class="modal">
+    <img id="mImg" alt="">
+    <h2 id="mName"></h2>
+    <p id="mStory"></p>
+    <div class="row">
+      <button class="btn" type="button" id="mClose">关上</button>
+      <button class="btn" type="button" id="mDel">从画廊拿掉</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=(arr,not)=>{let v;do{v=arr[rnd(arr.length)]}while(arr.length>1&&v===not);return v};
+const PALETTES=[
+  {name:'糖果霓虹',why:'粉、黄、青、蓝都很亮，像夜市的灯牌。亮色放在深色上最显眼。',colors:['#FF6FA5','#FFD166','#5BE0C2','#8FA8FF','#FF9F6B']},
+  {name:'极光',why:'绿、蓝、紫挨得很近，叫邻近色，叠在一起像会流动的光。',colors:['#5BE0C2','#7DF9A6','#6FB8FF','#B58CFF','#F0F6FF']},
+  {name:'烟花',why:'红、橙、黄都是暖色，热闹又开心。最后点一点白色，像火星。',colors:['#FF5C7A','#FFB347','#FFE66D','#FF8AD8','#FFFFFF']},
+  {name:'深海水母',why:'冷冷的蓝紫里藏一点粉，安静又神秘。',colors:['#6FD3FF','#9B8CFF','#FF9BE0','#5CF2E0','#E6F0FF']},
+  {name:'青花夜光',why:'中国瓷器上的蓝。只用深深浅浅的蓝，再点一笔金色。',colors:['#4F86FF','#9CC3FF','#DCEBFF','#E8C56B','#6A7CFF']},
+  {name:'敦煌金',why:'一千多年前的壁画颜色：土红、石绿、赭黄，在夜里像烛光。',colors:['#FF7A4D','#FFC24A','#4FD1B8','#F2E2B8','#FF9E9E']},
+  {name:'彩虹糖',why:'每个颜色都很鲜艳，适合画热闹的东西。试试只挑其中两个。',colors:['#EF5B7A','#F7A531','#F2D43D','#4DBE8B','#4C8FE0']}
+];
+const BRUSHES=[['water','荧光笔'],['fine','细线笔'],['dots','点点笔']];
+
+/* 存储：这台电脑上的小抽屉，打不开就只放在内存里 */
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+};
+let works=store.get('ngk-works',[]);
+const stats=Object.assign({stampsUsed:[],ns:[],pals:[],brushes:[],products:[],kinds:[],starters:{},tasks:0,remix:0},store.get('ngk-stats',{}));
+const addU=(arr,v)=>{if(!arr.includes(v))arr.push(v)};
+const CAN_DL=/github\.io$/.test(location.hostname)||location.protocol==='file:';
+
+let toastT;
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2800)}
+function press(list,attr,val){list.forEach(b=>b.setAttribute('aria-pressed',b.dataset[attr]===String(val)))}
+
+/* 画一笔：三间画室共用。rep 决定这一笔要重复画几遍（万花镜的对称、印花的接缝） */
+function strokePath(ctx,s,from,col,rep){
+  ctx.lineCap=ctx.lineJoin='round';ctx.strokeStyle=ctx.fillStyle=col;ctx.shadowColor=col;
+  if(s.brush==='dots'){
+    ctx.shadowBlur=s.size*.4;
+    for(let i=from;i<s.pts.length;i++){const p=s.pts[i];rep(()=>{ctx.beginPath();ctx.arc(p.x,p.y,s.size*.55,0,7);ctx.fill()})}
+    ctx.shadowBlur=0;return;
+  }
+  const er=s.brush==='eraser';
+  ctx.lineWidth=er?s.size*1.6:s.brush==='fine'?Math.max(2.5,s.size*.28):s.size;
+  ctx.shadowBlur=er?0:s.size*(s.brush==='water'?.7:.25);
+  const a=Math.max(0,from-1);
+  rep(()=>{
+    ctx.beginPath();ctx.moveTo(s.pts[a].x,s.pts[a].y);
+    if(s.pts.length-a===1)ctx.lineTo(s.pts[a].x+.01,s.pts[a].y);
+    if(a===0&&s.pts.length>2){
+      for(let i=1;i<s.pts.length-1;i++){const p=s.pts[i],q=s.pts[i+1];ctx.quadraticCurveTo(p.x,p.y,(p.x+q.x)/2,(p.y+q.y)/2)}
+      const l=s.pts[s.pts.length-1];ctx.lineTo(l.x,l.y);
+    }else for(let i=a+1;i<s.pts.length;i++)ctx.lineTo(s.pts[i].x,s.pts[i].y);
+    ctx.stroke();
+  });
+  ctx.shadowBlur=0;
+}
+/* 小图章：现成的小元素，摆哪里、摆多大、配什么颜色由她决定。坐标在 -50..50 的方格里 */
+const STAMPS=(function(){
+  const P=d=>new Path2D(d),circ=(p,x,y,r)=>{p.moveTo(x+r,y);p.arc(x,y,r,0,7)};
+  const flower=new Path2D();for(let i=0;i<5;i++){const a=i*Math.PI*2/5-Math.PI/2;circ(flower,Math.cos(a)*25,Math.sin(a)*25,18)}
+  const fdot=new Path2D();circ(fdot,0,0,11);
+  let st='';for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,r=i%2?20:48;st+=(i?'L':'M')+(Math.cos(a)*r).toFixed(1)+' '+(Math.sin(a)*r).toFixed(1)}
+  const sun=new Path2D(),rays=new Path2D();circ(sun,0,0,22);for(let i=0;i<8;i++){const a=i*Math.PI/4;rays.moveTo(Math.cos(a)*31,Math.sin(a)*31);rays.lineTo(Math.cos(a)*46,Math.sin(a)*46)}
+  const snow=new Path2D();for(let i=0;i<6;i++){const a=i*Math.PI/3,c=Math.cos(a),s=Math.sin(a);snow.moveTo(0,0);snow.lineTo(c*46,s*46);[-1,1].forEach(k=>{const b=a+k*.9;snow.moveTo(c*28,s*28);snow.lineTo(c*28+Math.cos(b)*14,s*28+Math.sin(b)*14)})}
+  const eye=(x,y)=>{const p=new Path2D();circ(p,x,y,3.5);return p};
+  const mdot=new Path2D();circ(mdot,-18,-20,6);circ(mdot,12,-28,5);circ(mdot,22,-10,4);
+  const disc=new Path2D();circ(disc,0,0,44);const ring=new Path2D();circ(ring,0,0,36);
+  return{
+    leaf:{name:'树叶',fill:P('M0 -48 C30 -30 34 14 0 48 C-34 14 -30 -30 0 -48 Z'),line:P('M0 -38 L0 42 M0 -12 L14 -24 M0 6 L-15 -7 M0 22 L13 10')},
+    butterfly:{name:'蝴蝶',fill:P('M0 -6 C-14 -46 -52 -42 -47 -10 C-45 5 -20 6 0 2 Z M0 -6 C14 -46 52 -42 47 -10 C45 5 20 6 0 2 Z M0 2 C-22 6 -40 16 -32 34 C-24 48 -6 34 0 10 Z M0 2 C22 6 40 16 32 34 C24 48 6 34 0 10 Z'),line:P('M0 -14 L0 24'),stroke:P('M0 -12 Q-7 -32 -15 -35 M0 -12 Q7 -32 15 -35'),w:3},
+    flower:{name:'花朵',fill:flower,dot:fdot},
+    tree:{name:'小树',fill:P('M0 -48 L30 -8 L14 -8 L38 26 L-38 26 L-14 -8 L-30 -8 Z M-7 26 H7 V46 H-7 Z')},
+    mushroom:{name:'蘑菇',fill:P('M-44 4 C-44 -52 44 -52 44 4 Z M-13 4 L-17 42 Q0 50 17 42 L13 4 Z'),dot:mdot},
+    bird:{name:'小鸟',fill:P('M-30 6 C-30 -22 14 -28 26 -8 L45 -11 L30 4 C24 26 -8 30 -30 6 Z M-27 2 L-48 -10 L-44 14 Z'),dot:eye(14,-7),line:P('M-12 4 Q2 16 14 6')},
+    fish:{name:'小鱼',fill:P('M-46 0 C-22 -30 18 -26 30 0 C18 26 -22 30 -46 0 Z M26 0 L48 -20 L48 20 Z'),dot:eye(-28,-5),line:P('M-12 -14 Q-4 0 -12 14')},
+    drop:{name:'水滴',fill:P('M0 -48 C40 2 30 44 0 44 C-30 44 -40 2 0 -48 Z')},
+    cloud:{name:'云',fill:P('M-34 22 A18 18 0 0 1 -30 -12 A22 22 0 0 1 10 -22 A18 18 0 0 1 38 0 A14 14 0 0 1 32 22 Z')},
+    sun:{name:'太阳',fill:sun,stroke:rays,w:7},
+    moon:{name:'月亮',fill:P('M10 -45 A46 46 0 1 0 10 45 A56 56 0 0 1 10 -45 Z')},
+    star:{name:'星星',fill:P(st+'Z')},
+    snow:{name:'雪花',stroke:snow,w:6},
+    heart:{name:'爱心',fill:P('M0 42 C-62 0 -30 -50 0 -18 C30 -50 62 0 0 42 Z')},
+    disc:{name:'圆',fill:disc},
+    ring:{name:'环',stroke:ring,w:13},
+    tri:{name:'三角',fill:P('M0 -46 L42 30 L-42 30 Z')},
+    square:{name:'方块',fill:P('M-38 -38 H38 V38 H-38 Z')}
+  };
+})();
+function drawStampShape(ctx,d,col,glow){
+  ctx.fillStyle=ctx.strokeStyle=col;ctx.shadowColor=col;ctx.shadowBlur=glow;ctx.lineCap=ctx.lineJoin='round';
+  if(d.fill)ctx.fill(d.fill);
+  if(d.stroke){ctx.lineWidth=d.w||7;ctx.stroke(d.stroke)}
+  ctx.shadowBlur=0;
+  if(d.line){ctx.strokeStyle='rgba(18,17,46,.55)';ctx.lineWidth=3.5;ctx.stroke(d.line)}
+  if(d.dot){ctx.fillStyle='rgba(18,17,46,.6)';ctx.fill(d.dot)}
+}
+function drawStamp(ctx,op,col){
+  const d=STAMPS[op.stamp];if(!d)return;
+  ctx.save();ctx.translate(op.x,op.y);ctx.rotate(op.rot);ctx.scale(op.size/50,op.size/50);drawStampShape(ctx,d,col,op.size*.35);ctx.restore();
+}
+function stampAt(S,p){return S.tool==='draw'?null:{stamp:S.tool,size:S.size*1.6+10,slot:S.slot,x:p.x,y:p.y,rot:S.spin?Math.random()*Math.PI*2:0}}
+const ptOf=(cv,size,off)=>e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*size/r.width-off,y:(e.clientY-r.top)*size/r.height-off}};
+function track(cv,toPt,S,h){
+  let cur=null,lastDot=null;
+  cv.addEventListener('pointerdown',e=>{
+    if(e.button)return;e.preventDefault();
+    const p=toPt(e);if(h.tap&&h.tap(p))return;
+    try{cv.setPointerCapture(e.pointerId)}catch(_){}
+    cur={brush:S.brush,size:S.size,slot:S.slot,pts:[p]};lastDot=p;h.begin(cur);
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!cur)return;const p=toPt(e),q=cur.pts[cur.pts.length-1];
+    if(cur.brush==='dots'){if(Math.hypot(p.x-lastDot.x,p.y-lastDot.y)<cur.size*1.5)return;lastDot=p}
+    else if(Math.hypot(p.x-q.x,p.y-q.y)<2)return;
+    cur.pts.push(p);h.extend(cur,cur.pts.length-1);
+  });
+  const end=()=>{if(cur){const c=cur;cur=null;h.end(c)}};
+  cv.addEventListener('pointerup',end);cv.addEventListener('pointercancel',end);
+}
+function history(S,redraw,clearMsg){
+  S.ops=[];S.redo=[];S.cleared=null;
+  return{
+    push(op){S.ops.push(op);S.redo=[];S.cleared=null},
+    undo(){if(S.ops.length){S.redo.push(S.ops.pop());redraw()}else if(S.cleared){S.ops=S.cleared;S.cleared=null;redraw();toast('刚才那张拿回来了')}},
+    redo(){if(S.redo.length){S.ops.push(S.redo.pop());redraw()}},
+    clear(){if(!S.ops.length)return;S.cleared=S.ops;S.ops=[];S.redo=[];S.remixed=false;redraw();toast(clearMsg)}
+  };
+}
+function thumb(cv,bg){
+  const o=document.createElement('canvas');o.width=o.height=420;const x=o.getContext('2d');
+  if(bg){x.fillStyle=bg;x.fillRect(0,0,420,420)}
+  x.drawImage(cv,0,0,420,420);return o.toDataURL('image/jpeg',.85);
+}
+
+/* 每间画室都有的四张卡：颜料盒、画笔、任务卡、收进画廊 */
+const studios={};
+function mount(key,S,o){
+  const v=$('#v-'+key);
+  Object.assign(S,{tool:'draw',spin:false,pal:o.pal||0,slot:0,brush:'water',size:o.size||26,task:rnd((o.tasks||[1]).length),taskOn:false,remixed:false});
+  const H=history(S,o.redraw,o.clearMsg);
+
+  const pc=$('[data-m=palette]',v);
+  pc.innerHTML='<h3>颜料盒</h3><div class="pals"></div><p class="why pwhy"></p><div class="swatches"></div>';
+  function renderPal(){
+    const host=$('.pals',pc);host.innerHTML='';
+    PALETTES.forEach((p,i)=>{
+      const b=document.createElement('button');b.type='button';b.className='pal';b.setAttribute('aria-pressed',i===S.pal);
+      b.innerHTML='<i>'+p.colors.map(c=>'<b style="background:'+c+'"></b>').join('')+'</i><span>'+p.name+'</span>';
+      b.onclick=()=>{S.pal=i;renderPal();o.redraw()};host.append(b);
+    });
+    $('.why',pc).textContent=PALETTES[S.pal].why;
+    const sw=$('.swatches',pc);sw.innerHTML='';
+    PALETTES[S.pal].colors.forEach((c,i)=>{
+      const b=document.createElement('button');b.type='button';b.className='sw';b.style.background=c;
+      b.setAttribute('aria-label','第 '+(i+1)+' 个颜色');b.setAttribute('aria-pressed',i===S.slot);
+      b.onclick=()=>{S.slot=i;renderPal()};sw.append(b);
+    });
+  }
+
+  const bc=$('[data-m=brush]',v),brushes=BRUSHES.concat(o.extraBrushes||[]);
+  bc.innerHTML='<h3>画笔</h3><div class="row tight">'+brushes.map(b=>'<button class="btn" type="button" data-brush="'+b[0]+'">'+b[1]+'</button>').join('')+
+    '</div><label class="lab" for="'+key+'-size"><span>笔的粗细</span><span>'+S.size+'</span></label><input type="range" id="'+key+'-size" min="6" max="60" step="1" value="'+S.size+'">';
+  const bb=$$('[data-brush]',bc);
+  function renderBrush(){press(bb,'brush',S.tool==='draw'?S.brush:'');press(sb,'stamp',S.tool)}
+  bb.forEach(b=>b.onclick=()=>{S.brush=b.dataset.brush;S.tool='draw';renderBrush()});
+  const stc=$('[data-m=stamps]',v);
+  stc.innerHTML='<h3>小图章</h3><div class="sgrid"></div><div class="row tight" style="margin-top:10px"><button class="btn" type="button" aria-pressed="false">每次转个角度</button></div><p class="why">选一个，在画纸上点一下。大小跟着"笔的粗细"变，颜色跟着颜料盒变。</p>';
+  Object.keys(STAMPS).forEach(k=>{
+    const b=document.createElement('button');b.type='button';b.className='sbtn';b.dataset.stamp=k;b.setAttribute('aria-label',STAMPS[k].name);b.title=STAMPS[k].name;
+    const c=document.createElement('canvas');c.width=c.height=72;const x=c.getContext('2d');x.translate(36,36);x.scale(.62,.62);drawStampShape(x,STAMPS[k],'#F1EDFF',0);
+    b.append(c);b.onclick=()=>{S.tool=k;renderBrush()};$('.sgrid',stc).append(b);
+  });
+  const sb=$$('.sbtn',stc);
+  $('.btn',stc).onclick=e=>{S.spin=!S.spin;e.currentTarget.setAttribute('aria-pressed',S.spin)};
+  $('input',bc).oninput=e=>{S.size=+e.target.value;$('label span:last-child',bc).textContent=S.size};
+
+  const tc=$('[data-m=task]',v);
+  function renderTask(){if(!tc)return;$('.task',tc).textContent=o.tasks[S.task];$('[data-t=on]',tc).setAttribute('aria-pressed',S.taskOn)}
+  if(tc){
+    tc.innerHTML='<div class="taskhead"><svg class="drop" viewBox="0 0 46 52" aria-hidden="true"><path d="M23 3C30 15 41 23 41 34a18 18 0 0 1-36 0C5 23 16 15 23 3Z" fill="#8FD3FF"/><circle cx="17" cy="33" r="2.6" fill="#12112E"/><circle cx="29" cy="33" r="2.6" fill="#12112E"/><path d="M19 40q4 4 8 0" fill="none" stroke="#12112E" stroke-width="2.2" stroke-linecap="round"/></svg><h3 style="margin:0">小水滴的任务卡</h3></div><p class="task"></p><div class="row tight"><button class="btn" type="button" data-t="next">换一张</button><button class="btn" type="button" data-t="on" aria-pressed="false">我照这张画</button></div>';
+    $('[data-t=next]',tc).onclick=()=>{S.task=pick(o.tasks.map((_,i)=>i),S.task);S.taskOn=false;renderTask()};
+    $('[data-t=on]',tc).onclick=()=>{S.taskOn=!S.taskOn;renderTask()};
+  }
+
+  const sc=$('[data-m=save]',v);
+  sc.innerHTML='<h3>收进画廊</h3><div class="field"><label for="'+key+'-name">'+o.nameLabel+'</label><input id="'+key+'-name" maxlength="16" autocomplete="off" placeholder="'+o.namePh+'"></div><div class="field"><label for="'+key+'-story">用一句话说说它</label><input id="'+key+'-story" maxlength="40" autocomplete="off" placeholder="'+o.storyPh+'"></div><p class="err" role="alert"></p><button class="btn big" type="button">收进画廊</button>';
+  const nameI=$('#'+key+'-name'),storyI=$('#'+key+'-story'),err=$('.err',sc);
+  nameI.oninput=()=>{err.textContent=''};
+  $('.big',sc).onclick=()=>{
+    const name=nameI.value.trim(),story=storyI.value.trim();
+    if(!S.ops.length){err.textContent='还是空的，先画几笔。';return}
+    if(!name){err.textContent='先给它起个名字，只有你能起。';nameI.focus();return}
+    works.unshift({id:Date.now(),kind:o.kind,name,story,img:thumb(o.canvas(),o.thumbBg)});
+    if(works.length>24)works.length=24;
+    addU(stats.pals,S.pal);addU(stats.kinds,key);
+    S.ops.forEach(s=>{if(s.brush&&s.brush!=='eraser')addU(stats.brushes,s.brush);if(s.stamp)addU(stats.stampsUsed,s.stamp)});
+    if(S.taskOn)stats.tasks++;
+    if(S.remixed)stats.remix++;
+    o.onSave&&o.onSave();
+    S.taskOn=false;S.remixed=false;
+    const ok=store.set('ngk-works',works);store.set('ngk-stats',stats);
+    nameI.value='';storyI.value='';err.textContent='';
+    renderTask();renderShelf();renderStamps();
+    toast(ok?(o.savedMsg||'《'+name+'》收进画廊了'):'收好了，不过这台电脑存不下，关掉网页后会消失');
+    o.afterSave&&o.afterSave();
+  };
+
+  $$('.bar [data-a]',v).forEach(b=>{
+    const a=b.dataset.a;
+    if(a==='dl'){if(CAN_DL){b.hidden=false;b.onclick=()=>{const l=document.createElement('a');l.download=(nameI.value.trim()||o.kind)+'.png';l.href=o.canvas().toDataURL('image/png');l.click()}}}
+    else b.onclick=()=>H[a]();
+  });
+  renderPal();renderBrush();renderTask();
+  studios[key]={H,renderPal,renderBrush};
+  return H;
+}
+
+/* ───────── 一、万花镜 ───────── */
+const K={n:6,mirror:true,paper:'night',guides:true};
+(function(){
+  const SIZE=1000,C=500,PAPERS={night:'#15143A',sea:'#06283D',white:'#FFFDF7'},ALPHA={water:.8,fine:1,dots:.9},NS=[3,4,5,6,8,12];
+  const base=$('#k-base'),guide=$('#k-guide'),live=$('#k-live');
+  const bx=base.getContext('2d'),gx=guide.getContext('2d'),lx=live.getContext('2d');
+  const dark=()=>K.paper!=='white';
+  const col=s=>PALETTES[K.pal].colors[s.slot];
+  const sym=(ctx,fn)=>{for(let i=0;i<K.n;i++){ctx.save();ctx.translate(C,C);ctx.rotate(i*2*Math.PI/K.n);fn();if(K.mirror){ctx.scale(1,-1);fn()}ctx.restore()}};
+  const paint=(s,from)=>s.stamp?sym(lx,()=>drawStamp(lx,s,col(s))):strokePath(lx,s,from,col(s),fn=>sym(lx,fn));
+  const alpha=s=>ALPHA[s.brush]||.92;
+  function commit(s){bx.save();bx.globalAlpha=alpha(s);bx.globalCompositeOperation=dark()?'screen':'multiply';bx.drawImage(live,0,0);bx.restore();lx.clearRect(0,0,SIZE,SIZE)}
+  function guides(){
+    gx.clearRect(0,0,SIZE,SIZE);if(!K.guides)return;
+    gx.strokeStyle=dark()?'rgba(255,255,255,.22)':'rgba(74,63,85,.2)';gx.lineWidth=2;gx.setLineDash([10,12]);
+    for(let i=0;i<K.n;i++){const a=i*2*Math.PI/K.n-Math.PI/2;gx.beginPath();gx.moveTo(C,C);gx.lineTo(C+Math.cos(a)*SIZE,C+Math.sin(a)*SIZE);gx.stroke()}
+    gx.setLineDash([4,14]);[160,330].forEach(r=>{gx.beginPath();gx.arc(C,C,r,0,7);gx.stroke()});
+  }
+  function redraw(){
+    bx.globalCompositeOperation='source-over';bx.globalAlpha=1;bx.fillStyle=PAPERS[K.paper];bx.fillRect(0,0,SIZE,SIZE);
+    for(const s of K.ops){lx.clearRect(0,0,SIZE,SIZE);paint(s,0);commit(s)}
+    guides();
+    $('#k-hint').classList.toggle('off',K.ops.length>0);$('#k-hint').classList.toggle('dark',!dark());
+  }
+  const H=mount('kaleido',K,{
+    kind:'万花镜',redraw,canvas:()=>base,clearMsg:'新纸铺好了。按"撤销一笔"可以把旧的拿回来',
+    nameLabel:'这幅画叫什么',namePh:'会唱歌的雪花',storyPh:'它只在下雨天才开',
+    onSave(){addU(stats.ns,K.n)},
+    tasks:[
+      '只用两种颜色，画一朵世界上没有的花。','闭上眼睛画三秒。睁开眼，把它改成你喜欢的样子。','只画点点，一条线也不画。','只用一种小图章，换大小、换颜色，摆出一个新东西。',
+      '关掉镜像，画一个看起来在转的东西。','从纸的最边上开始画，最后才画中心。','画一个声音：下雨的声音长什么样？',
+      '画一种味道：草莓冰淇淋是什么图案？','先随便画一团乱线，再想办法让它变好看。','用最粗的笔画三笔，再用最细的笔把它补完。',
+      '画一个只有你知道意思的徽章。','把花瓣数调到 3，画一个不像花的东西。','画一个心情：今天的你是什么颜色、什么形状？',
+      '画一扇圆窗户，窗外是你想去的地方。','画一颗还没有被发现的星星，再给它起个名字。','每画一笔就换一种颜色，一共只画五笔。',
+      '画一座圆形小岛的地图：岛上有什么？','画一个盘子，花纹要让吃饭的人笑出来。','用你最不喜欢的那个颜色，画一幅你喜欢的画。',
+      '画一个轮子，它属于一辆谁也没见过的车。','画完以后按"变一变"，给变出来的新画起个新名字。'
+    ]
+  });
+  track(live,ptOf(live,SIZE,C),K,{
+    tap(p){const op=stampAt(K,p);if(!op)return false;paint(op,0);commit(op);H.push(op);$('#k-hint').classList.add('off');return true},
+    begin(s){live.style.opacity=alpha(s);live.style.mixBlendMode=dark()?'screen':'multiply';paint(s,0);$('#k-hint').classList.add('off')},
+    extend(s,k){paint(s,k)},
+    end(s){lx.clearRect(0,0,SIZE,SIZE);paint(s,0);commit(s);H.push(s)}
+  });
+  function renderNs(){
+    const host=$('#k-ns');host.innerHTML='';
+    NS.forEach(n=>{const b=document.createElement('button');b.type='button';b.className='btn num';b.textContent=n;b.setAttribute('aria-pressed',n===K.n);b.setAttribute('aria-label',n+' 瓣');b.onclick=()=>{K.n=n;renderNs();redraw()};host.append(b)});
+  }
+  const papers=$$('#k-papers .btn');
+  papers.forEach(b=>b.onclick=()=>{K.paper=b.dataset.paper;press(papers,'paper',K.paper);redraw()});
+  $('#k-mirror').onclick=e=>{K.mirror=!K.mirror;e.currentTarget.setAttribute('aria-pressed',K.mirror);redraw()};
+  $('#k-guides').onclick=e=>{K.guides=!K.guides;e.currentTarget.setAttribute('aria-pressed',K.guides);guides()};
+  $('#k-dice').onclick=()=>{
+    if(!K.ops.length){toast('先画几笔，再来变一变');return}
+    K.n=pick(NS,K.n);K.pal=pick(PALETTES.map((_,i)=>i),K.pal);if(Math.random()<.35)K.mirror=!K.mirror;K.remixed=true;
+    $('#k-mirror').setAttribute('aria-pressed',K.mirror);renderNs();studios.kaleido.renderPal();redraw();
+    toast('同一幅画，变成了 '+K.n+' 瓣的'+PALETTES[K.pal].name);
+  };
+  press(papers,'paper',K.paper);renderNs();redraw();
+})();
+
+/* ───────── 二、印花设计师 ───────── */
+const P={product:'dress',layout:'grid',scale:'m',base:'night'};
+(function(){
+  const T=360,BASES={night:'#15143A',ink:'#0A0A16',cream:'#FFF8EC'},SCALES={s:.17,m:.27,l:.42};
+  const tc=$('#p-tile'),tx=tc.getContext('2d'),pc=$('#p-prod'),px=pc.getContext('2d');
+  const wrap=fn=>{for(const dx of[-T,0,T])for(const dy of[-T,0,T]){tx.save();tx.translate(dx,dy);fn();tx.restore()}};
+  const LINE='rgba(241,237,255,.9)';
+  const PRODUCTS={
+    dress:{name:'连衣裙',d:'M232 80 L262 80 Q300 128 338 80 L368 80 L392 232 L486 520 Q300 572 114 520 L208 232 Z'},
+    tee:{name:'T恤',d:'M205 105 Q300 165 395 105 L525 180 L472 275 L420 245 L420 515 L180 515 L180 245 L128 275 L75 180 Z'},
+    cup:{name:'杯子',d:'M150 165 L410 165 L386 500 Q280 522 174 500 Z',before(x){x.beginPath();x.moveTo(404,235);x.bezierCurveTo(520,235,510,420,392,415);x.lineWidth=24;x.strokeStyle=LINE;x.stroke()}},
+    umbrella:{name:'雨伞',d:'M50 330 Q300 -20 550 330 Q487 275 425 330 Q362 275 300 330 Q237 275 175 330 Q112 275 50 330 Z',after(x){x.beginPath();x.moveTo(300,330);x.lineTo(300,520);x.quadraticCurveTo(300,565,345,560);x.lineWidth=12;x.strokeStyle=LINE;x.stroke()}},
+    gift:{name:'礼物盒',d:'M110 230 H490 V540 H110 Z',after(x){const c=PALETTES[P.pal].colors[P.slot];x.fillStyle=c;x.fillRect(275,230,50,310);x.strokeStyle=LINE;x.lineWidth=4;[[258,200,-.5],[342,200,.5]].forEach(([cx,cy,a])=>{x.beginPath();x.ellipse(cx,cy,44,24,a,0,7);x.fill();x.stroke()})}},
+    kite:{name:'风筝',d:'M300 50 L470 250 L300 480 L130 250 Z',after(x){x.beginPath();x.moveTo(300,480);x.bezierCurveTo(250,520,350,540,300,585);x.lineWidth=5;x.strokeStyle=LINE;x.stroke()}}
+  };
+  function paint(op,from){
+    const col=PALETTES[P.pal].colors[op.slot];
+    if(op.stamp){wrap(()=>drawStamp(tx,op,col));return}
+    strokePath(tx,op,from,col,wrap);
+  }
+  function patCanvas(){
+    const u=Math.round(T*SCALES[P.scale]),o=document.createElement('canvas'),x=o.getContext('2d');
+    const flip=(sx,sy,tx2,ty2)=>{const c=o.getContext('2d');c.save();c.translate(tx2,ty2);c.scale(sx,sy);c.drawImage(tc,0,0,u,u);c.restore()};
+    if(P.layout==='grid'){o.width=o.height=u;x.drawImage(tc,0,0,u,u)}
+    else if(P.layout==='brick'){o.width=u;o.height=2*u;x.drawImage(tc,0,0,u,u);x.drawImage(tc,-u/2,u,u,u);x.drawImage(tc,u/2,u,u,u)}
+    else{o.width=o.height=2*u;flip(1,1,0,0);flip(-1,1,2*u,0);flip(1,-1,0,2*u);flip(-1,-1,2*u,2*u)}
+    return o;
+  }
+  let raf=0;
+  function prod(){
+    raf=0;px.clearRect(0,0,600,600);
+    const pr=PRODUCTS[P.product],path=new Path2D(pr.d);
+    px.lineJoin=px.lineCap='round';
+    pr.before&&pr.before(px);
+    px.fillStyle=BASES[P.base];px.fill(path);px.fillStyle=px.createPattern(patCanvas(),'repeat');px.fill(path);
+    px.lineWidth=5;px.strokeStyle=LINE;px.stroke(path);
+    pr.after&&pr.after(px);
+    $('#p-cap').textContent='印在'+pr.name+'上';
+  }
+  const later=()=>{if(!raf)raf=requestAnimationFrame(prod)};
+  function redraw(){
+    tx.clearRect(0,0,T,T);P.ops.forEach(o=>paint(o,0));
+    $('#p-tilebox').style.background=BASES[P.base];
+    $('#p-hint').classList.toggle('off',P.ops.length>0);$('#p-hint').classList.toggle('dark',P.base==='cream');
+    prod();
+  }
+  const H=mount('pattern',P,{
+    kind:'印花',pal:3,size:22,redraw,canvas:()=>pc,thumbBg:'#1D1B45',clearMsg:'擦干净了。按"撤销一步"可以拿回来',
+    nameLabel:'这个设计叫什么',namePh:'月亮的睡裙',storyPh:'穿上它就不怕黑了',
+    onSave(){addU(stats.products,P.product)},
+    tasks:[
+      '设计一条给月亮穿的裙子。','只用圆形图章，做一个看起来在动的花纹。','给一个怕黑的小朋友设计一把雨伞。',
+      '在花纹里藏一个字，别让人一眼看出来。','只用一种颜色，靠大小变化让它不无聊。','设计一个看了会觉得凉快的杯子。',
+      '给外星人设计一件 T 恤。','让图案从格子的一边跑出去，再从另一边跑回来。','做一张包装纸，里面包的是一个秘密。',
+      '切换到"镜子排"，看看你的图案变成了什么，再接着改。','画三个大小不同的同一种形状，别的都不画。','设计一种只有下雨天才穿的花纹。',
+      '只在格子的四个角上画，中间留空。','做一只风筝，它飞起来的时候像一种动物。','先随便点十下小图章，再用画笔把它们连成一个东西。',
+      '设计好以后按"变一变"，挑出你最意外的那一种。'
+    ]
+  });
+  track(tc,ptOf(tc,T,0),P,{
+    tap(p){const op=stampAt(P,p);if(!op)return false;paint(op,0);H.push(op);$('#p-hint').classList.add('off');later();return true},
+    begin(s){paint(s,0);$('#p-hint').classList.add('off');later()},
+    extend(s,k){paint(s,k);later()},
+    end(s){H.push(s);redraw()}
+  });
+  const ph=$('#p-products');
+  Object.keys(PRODUCTS).forEach(k=>{const b=document.createElement('button');b.type='button';b.className='btn';b.dataset.product=k;b.textContent=PRODUCTS[k].name;ph.append(b)});
+  const groups={product:$$('#p-products .btn'),layout:$$('#p-layouts .btn'),scale:$$('#p-scales .btn'),base:$$('#p-bases .btn')};
+  const sync=()=>Object.keys(groups).forEach(g=>press(groups[g],g,P[g]));
+  Object.keys(groups).forEach(g=>groups[g].forEach(b=>b.onclick=()=>{P[g]=b.dataset[g];sync();redraw()}));
+  $('#p-dice').onclick=()=>{
+    if(!P.ops.length){toast('先在小格子里画点什么，再来变一变');return}
+    P.layout=pick(['grid','brick','mirror'],P.layout);P.scale=pick(['s','m','l'],P.scale);P.pal=pick(PALETTES.map((_,i)=>i),P.pal);P.remixed=true;
+    sync();studios.pattern.renderPal();redraw();
+    toast('同一个图案，换了排法、大小和颜料');
+  };
+  sync();redraw();
+})();
+
+/* ───────── 三、灵感挑战 ───────── */
+const S={rot:0};
+(function(){
+  const BG='#15143A',sc=$('#s-canvas'),sx=sc.getContext('2d');
+  const dot=(c,x,y)=>{c.moveTo(x+13,y);c.arc(x,y,13,0,7)};
+  const STARTERS=[
+    {name:'一个圆',f(c){c.arc(0,-20,110,0,7)}},
+    {name:'两条线',f(c){c.moveTo(-110,-170);c.lineTo(-110,150);c.moveTo(110,-170);c.lineTo(110,150)}},
+    {name:'一条波浪',f(c){c.moveTo(-250,20);c.bezierCurveTo(-150,-140,-50,180,50,20);c.bezierCurveTo(100,-60,170,-60,230,20)}},
+    {name:'一个三角',f(c){c.moveTo(0,-180);c.lineTo(170,120);c.lineTo(-170,120);c.closePath()}},
+    {name:'半个圆',f(c){c.arc(0,40,170,Math.PI,0)}},
+    {name:'三个点',f(c){dot(c,-150,60);dot(c,0,-90);dot(c,150,60)}},
+    {name:'一圈螺旋',f(c){for(let t=0;t<=15;t+=.15){const r=9*t,x=r*Math.cos(t),y=r*Math.sin(t);t?c.lineTo(x,y):c.moveTo(x,y)}}},
+    {name:'一道闪电',f(c){c.moveTo(-60,-200);c.lineTo(60,-30);c.lineTo(-50,0);c.lineTo(70,200)}},
+    {name:'一个弯钩',f(c){c.moveTo(-80,-190);c.lineTo(-80,80);c.quadraticCurveTo(-80,190,50,170)}},
+    {name:'一大一小两个圆',f(c){c.moveTo(10,-40);c.arc(-70,-40,80,0,7);c.moveTo(135,90);c.arc(90,90,45,0,7)}},
+    {name:'一个方块',f(c){c.rect(-110,-110,220,220)}},
+    {name:'一滴水',f(c){c.moveTo(0,-190);c.bezierCurveTo(170,20,120,170,0,170);c.bezierCurveTo(-120,170,-170,20,0,-190)}}
+  ];
+  const PROMPTS=[
+    '把它变成一种会飞的东西。','把它变成一只谁也没见过的动物。','把它变成一百年后的交通工具。','把它变成一座住着小精灵的房子。',
+    '把它变成一道外星人爱吃的菜。','把它变成一件会魔法的衣服。','把它变成海底的一个秘密。','把它变成一个让人笑出来的东西。',
+    '把它变成一种新的乐器，再想想它是什么声音。','把它变成只有下雨天才会出现的东西。','把它变成一个机器人朋友。','把它变成一棵结着奇怪果实的树。',
+    '把它变成游乐园里的一个新项目。','把它变成一顶帽子，戴上会发生一件怪事。','把它变成一个很小很小的东西的放大图。','把它变成一个很大很大的东西的一小部分。',
+    '把它变成一种还没有名字的天气。','把它变成一个梦里才有的地方。','把它变成你最不可能想到的东西。','把它藏起来：画完以后别人找不到原来的起点。'
+  ];
+  S.starter=rnd(STARTERS.length);S.prompt=rnd(PROMPTS.length);
+  const paint=(op,from)=>{sx.save();sx.translate(400,400);const c=PALETTES[S.pal].colors[op.slot];if(op.stamp)drawStamp(sx,op,c);else strokePath(sx,op,from,op.brush==='eraser'?BG:c,fn=>fn());sx.restore()};
+  function redraw(){
+    sx.fillStyle=BG;sx.fillRect(0,0,800,800);
+    sx.save();sx.translate(400,400);sx.rotate(S.rot*Math.PI/2);sx.beginPath();STARTERS[S.starter].f(sx);
+    sx.strokeStyle='#F1EDFF';sx.lineWidth=9;sx.lineCap=sx.lineJoin='round';sx.shadowColor='#8FA8FF';sx.shadowBlur=18;sx.stroke();sx.restore();sx.shadowBlur=0;
+    S.ops.forEach(o=>paint(o,0));
+  }
+  function card(){
+    $('#s-start').textContent='起点：'+STARTERS[S.starter].name;
+    $('#s-prompt').textContent=PROMPTS[S.prompt];
+    const n=stats.starters[S.starter]||0;
+    $('#s-count').textContent=n?'这个起点，你已经想出 '+n+' 种东西了。还能再想一种完全不同的吗？':'同一个起点可以变成很多种东西。画完一种，再试一种。';
+  }
+  const H=mount('spark',S,{
+    kind:'灵感挑战',pal:0,size:14,redraw,canvas:()=>sc,clearMsg:'你画的擦掉了，起点还在。按"撤销一笔"可以拿回来',
+    nameLabel:'它是什么',namePh:'会飞的煎饼',storyPh:'它每天早上绕着太阳转一圈',
+    extraBrushes:[['eraser','橡皮']],
+    onSave(){stats.starters[S.starter]=(stats.starters[S.starter]||0)+1},
+    savedMsg:'收好了。同一个起点，再想一个完全不同的吧',
+    afterSave(){S.ops=[];S.redo=[];S.cleared=null;S.prompt=pick(PROMPTS.map((_,i)=>i),S.prompt);card();redraw()}
+  });
+  track(sc,ptOf(sc,800,400),S,{tap(p){const op=stampAt(S,p);if(!op)return false;paint(op,0);H.push(op);return true},begin(s){paint(s,0)},extend(s,k){paint(s,k)},end(s){H.push(s);redraw()}});
+  $('#s-newPrompt').onclick=()=>{S.prompt=pick(PROMPTS.map((_,i)=>i),S.prompt);card()};
+  $('#s-newStart').onclick=()=>{
+    S.starter=pick(STARTERS.map((_,i)=>i),S.starter);S.rot=0;
+    if(S.ops.length){S.cleared=S.ops;S.ops=[];S.redo=[]}
+    card();redraw();
+  };
+  $('#s-rot').onclick=()=>{
+    S.rot=(S.rot+1)%4;
+    const turn=o=>{if(o.pts)o.pts=o.pts.map(p=>({x:-p.y,y:p.x}));else{const x=o.x;o.x=-o.y;o.y=x;o.rot+=Math.PI/2}};
+    S.ops.forEach(turn);S.redo.forEach(turn);redraw();
+    toast('换个方向看，它像什么？');
+  };
+  card();redraw();
+})();
+
+/* ───────── 画廊和印章 ───────── */
+function renderShelf(){
+  const host=$('#shelf');host.innerHTML='';
+  if(!works.length){host.innerHTML='<p class="empty">画廊在等第一幅画。去任意一间画室，画好以后起个名字，点"收进画廊"。</p>';return}
+  works.forEach(w=>{
+    const b=document.createElement('button');b.type='button';b.className='work';
+    const img=document.createElement('img');img.src=w.img;img.alt=w.name;
+    const k=document.createElement('em');k.textContent=w.kind||'万花镜';
+    const t=document.createElement('strong');t.textContent=w.name;
+    const s=document.createElement('small');s.textContent=w.story||'';
+    b.append(img,k,t,s);b.onclick=()=>openWork(w);host.append(b);
+  });
+}
+let openId=null;
+function openWork(w){openId=w.id;$('#mImg').src=w.img;$('#mImg').alt=w.name;$('#mName').textContent=w.name;$('#mStory').textContent=w.story||'';$('#veil').classList.add('on');$('#mClose').focus()}
+function closeWork(){$('#veil').classList.remove('on');openId=null}
+$('#mClose').onclick=closeWork;
+$('#veil').addEventListener('click',e=>{if(e.target.id==='veil')closeWork()});
+$('#mDel').onclick=()=>{works=works.filter(w=>w.id!==openId);store.set('ngk-works',works);closeWork();renderShelf();renderStamps()};
+function renderStamps(){
+  const best=Math.max(0,...Object.values(stats.starters));
+  const list=[
+    ['第一幅画',works.length,1],
+    ['三间画室都留下作品',stats.kinds.length,3],
+    ['花瓣探险家：试过 4 种花瓣数',stats.ns.length,4],
+    ['配色旅行家：用过 4 盒颜料',stats.pals.length,4],
+    ['三支笔都会用',stats.brushes.length,3],
+    ['图章收集家：用过 6 种小图章',stats.stampsUsed.length,6],
+    ['图案设计师：印在 4 种东西上',stats.products.length,4],
+    ['一个起点想出 3 种东西',best,3],
+    ['敢变一变：收藏 3 幅变出来的作品',stats.remix,3],
+    ['任务卡达人：完成 5 张任务卡',stats.tasks,5],
+    ['小小收藏家：收藏 8 幅作品',works.length,8]
+  ];
+  $('#stamps').innerHTML=list.map(([t,v,n])=>'<span class="stamp'+(v>=n?' on':'')+'">'+t+'<i>'+Math.min(v,n)+'/'+n+'</i></span>').join('');
+}
+
+/* ───────── 换画室 ───────── */
+const VIEWS=['kaleido','pattern','spark','gallery'];
+let view='kaleido';
+function route(){
+  const h=location.hash.slice(1);view=VIEWS.includes(h)?h:'kaleido';
+  VIEWS.forEach(v=>$('#v-'+v).classList.toggle('on',v===view));
+  $$('nav a').forEach(a=>{if(a.dataset.v===view)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+}
+window.addEventListener('hashchange',route);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeWork();
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&e.target.tagName!=='INPUT'&&studios[view]){e.preventDefault();studios[view].H.undo()}
+});
+renderShelf();renderStamps();route();
+})();
+</script>
+</body>
+</html>
