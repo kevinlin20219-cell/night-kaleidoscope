@@ -84,7 +84,7 @@ label.lab{display:flex;justify-content:space-between;font-size:14px;color:var(--
 .duo{display:flex;gap:20px;align-items:flex-start;justify-content:center;flex-wrap:wrap;width:100%}
 .duo figure{margin:0;display:flex;flex-direction:column;gap:8px;align-items:center}
 .duo figcaption{font-size:14px;color:var(--soft);font-weight:600}
-.tile{position:relative;width:300px;aspect-ratio:1;border-radius:16px;border:1.5px dashed rgba(255,255,255,.45);overflow:hidden;background:#15143A}
+.tile{position:relative;width:380px;aspect-ratio:1;border-radius:16px;border:1.5px dashed rgba(255,255,255,.45);overflow:hidden;background:#15143A}
 .tile canvas{position:absolute;inset:0;width:100%;height:100%}
 .tile .hint{font-size:18px;top:40%}
 .prod{width:min(100%,460px);aspect-ratio:1;border-radius:22px;background:rgba(255,255,255,.04);border:1.5px solid var(--line)}
@@ -366,7 +366,8 @@ function strokePath(ctx,s,from,col,rep){
     ctx.shadowBlur=0;return;
   }
   const er=s.brush==='eraser';
-  ctx.lineWidth=er?s.size*1.6:s.brush==='fine'?Math.max(2.5,s.size*.28):s.size;
+  const thin=s.brush==='fine'||s.brush==='line';
+  ctx.lineWidth=er?s.size*1.6:thin?Math.max(2.5,s.size*.28):s.size;
   ctx.shadowBlur=er?0:s.size*(s.brush==='water'?.7:.25);
   const a=Math.max(0,from-1);
   rep(()=>{
@@ -427,7 +428,7 @@ function drawStamp(ctx,op,col){
 function stampAt(S,p){return S.tool==='draw'?null:{stamp:S.tool,size:S.size*1.6+10,slot:S.slot,x:p.x,y:p.y,rot:S.spin?Math.random()*Math.PI*2:0}}
 const ptOf=(cv,size,off)=>e=>{const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*size/r.width-off,y:(e.clientY-r.top)*size/r.height-off}};
 function track(cv,toPt,S,h){
-  let cur=null,lastDot=null;
+  let cur=null,lastDot=null,mraf=0;
   cv.addEventListener('pointerdown',e=>{
     if(e.button)return;e.preventDefault();
     const p=toPt(e);if(h.tap&&h.tap(p))return;
@@ -435,7 +436,14 @@ function track(cv,toPt,S,h){
     cur={brush:S.brush,size:S.size,slot:S.slot,pts:[p]};lastDot=p;h.begin(cur);
   });
   cv.addEventListener('pointermove',e=>{
-    if(!cur)return;const p=toPt(e),q=cur.pts[cur.pts.length-1];
+    if(!cur)return;const p=toPt(e);
+    if(cur.brush==='line'){
+      cur.pts=[cur.pts[0],p];
+      const ref=cur;
+      if(mraf)return;mraf=requestAnimationFrame(()=>{mraf=0;if(ref.pts)h.extend(ref,1)});
+      return;
+    }
+    const q=cur.pts[cur.pts.length-1];
     if(cur.brush==='dots'){if(Math.hypot(p.x-lastDot.x,p.y-lastDot.y)<cur.size*1.5)return;lastDot=p}
     else if(Math.hypot(p.x-q.x,p.y-q.y)<2)return;
     cur.pts.push(p);h.extend(cur,cur.pts.length-1);
@@ -650,11 +658,12 @@ const P={product:'dress',layout:'grid',scale:'m',base:'night'};
   }
   const H=mount('pattern',P,{
     kind:'印花',pal:3,size:22,redraw,canvas:()=>pc,thumbBg:'#1D1B45',clearMsg:'擦干净了。按"撤销一步"可以拿回来',
+    extraBrushes:[['line','直线笔']],
     nameLabel:'这个设计叫什么',namePh:'月亮的睡裙',storyPh:'穿上它就不怕黑了',
     onSave(){addU(stats.products,P.product)},
     tasks:[
       '设计一条给月亮穿的裙子。','只用圆形图章，做一个看起来在动的花纹。','给一个怕黑的小朋友设计一把雨伞。',
-      '在花纹里藏一个字，别让人一眼看出来。','只用一种颜色，靠大小变化让它不无聊。','设计一个看了会觉得凉快的杯子。',
+      '只用直线笔，拼出一个有角有边的图案。','只用一种颜色，靠大小变化让它不无聊。','设计一个看了会觉得凉快的杯子。',
       '给外星人设计一件 T 恤。','让图案从格子的一边跑出去，再从另一边跑回来。','做一张包装纸，里面包的是一个秘密。',
       '切换到"镜子排"，看看你的图案变成了什么，再接着改。','画三个大小不同的同一种形状，别的都不画。','设计一种只有下雨天才穿的花纹。',
       '只在格子的四个角上画，中间留空。','做一只风筝，它飞起来的时候像一种动物。','先随便点十下小图章，再用画笔把它们连成一个东西。',
@@ -664,7 +673,10 @@ const P={product:'dress',layout:'grid',scale:'m',base:'night'};
   track(tc,ptOf(tc,T,0),P,{
     tap(p){const op=stampAt(P,p);if(!op)return false;paint(op,0);H.push(op);$('#p-hint').classList.add('off');later();return true},
     begin(s){paint(s,0);$('#p-hint').classList.add('off');later()},
-    extend(s,k){paint(s,k);later()},
+    extend(s,k){
+      if(s.brush==='line'){tx.clearRect(0,0,T,T);P.ops.forEach(o=>paint(o,0));paint(s,0);later();return}
+      paint(s,k);later();
+    },
     end(s){H.push(s);redraw()}
   });
   const ph=$('#p-products');
@@ -724,12 +736,20 @@ const S={rot:0};
   const H=mount('spark',S,{
     kind:'灵感挑战',pal:0,size:14,redraw,canvas:()=>sc,clearMsg:'你画的擦掉了，起点还在。按"撤销一笔"可以拿回来',
     nameLabel:'它是什么',namePh:'会飞的煎饼',storyPh:'它每天早上绕着太阳转一圈',
-    extraBrushes:[['eraser','橡皮']],
+    extraBrushes:[['eraser','橡皮'],['line','直线笔']],
     onSave(){stats.starters[S.starter]=(stats.starters[S.starter]||0)+1},
     savedMsg:'收好了。同一个起点，再想一个完全不同的吧',
     afterSave(){S.ops=[];S.redo=[];S.cleared=null;S.prompt=pick(PROMPTS.map((_,i)=>i),S.prompt);card();redraw()}
   });
-  track(sc,ptOf(sc,800,400),S,{tap(p){const op=stampAt(S,p);if(!op)return false;paint(op,0);H.push(op);return true},begin(s){paint(s,0)},extend(s,k){paint(s,k)},end(s){H.push(s);redraw()}});
+  track(sc,ptOf(sc,800,400),S,{
+    tap(p){const op=stampAt(S,p);if(!op)return false;paint(op,0);H.push(op);return true},
+    begin(s){paint(s,0)},
+    extend(s,k){
+      if(s.brush==='line'){redraw();paint(s,0);return}
+      paint(s,k);
+    },
+    end(s){H.push(s);redraw()}
+  });
   $('#s-newPrompt').onclick=()=>{S.prompt=pick(PROMPTS.map((_,i)=>i),S.prompt);card()};
   $('#s-newStart').onclick=()=>{
     S.starter=pick(STARTERS.map((_,i)=>i),S.starter);S.rot=0;
